@@ -122,27 +122,6 @@ def memGiB():
 
 # Prepare prerequisites =======================================================
 
-
-def installQBittorrent():
-    if checkAvailable("/usr/bin/qbittorrent-nox"):
-        return
-    else:
-        try:
-            runSh("add-apt-repository ppa:qbittorrent-team/qbittorrent-stable -y")
-            runSh("apt-get install qbittorrent-nox -qq -y")
-        except:
-            print("Error installing qBittorrent.")
-            exx()
-
-
-
-def installAutoSSH():
-    if checkAvailable("/usr/bin/autossh"):
-        return
-    else:
-        runSh("apt-get install autossh -qq -y")
-
-
 def addUtils():
     if checkAvailable("/content/sample_data"):
         runSh("rm -rf /content/sample_data")
@@ -152,7 +131,7 @@ def addUtils():
         runSh("touch /content/upload.txt")
     if not checkAvailable("/root/.ipython/rcloner.py"):
         runSh(
-            "wget -qq https://cavemanly.github.io/Cloudy/Resources/rcloner.py \
+            "wget -qq https://github.com/Cavemanly/Cloudy/blob/main/Resources/rcloner.py \
                 -O /root/.ipython/rcloner.py"
         )
     if not checkAvailable("checkAptUpdate.txt", userPath=True):
@@ -162,6 +141,17 @@ def addUtils():
         accessSettingFile("checkAptUpdate.txt", data)
 
 
+def configTimezone(auto=True):
+    if checkAvailable("timezone.txt", userPath=True):
+        return
+    if not auto:
+        runSh("sudo dpkg-reconfigure tzdata")
+    else:
+        runSh("sudo ln -fs /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime")
+        runSh("sudo dpkg-reconfigure -f noninteractive tzdata")
+    data = {"timezone": "Asia/Ho_Chi_Minh"}
+    accessSettingFile("timezone.txt", data)
+
 def prepareSession():
     if checkAvailable("ready.txt", userPath=True):
         return
@@ -169,8 +159,6 @@ def prepareSession():
         addUtils()
         configTimezone()
         uploadRcloneConfig()
-        uploadQBittorrentConfig()
-        installRclone()
         accessSettingFile("ready.txt", {"prepared": "True"})
 
 
@@ -207,212 +195,3 @@ def displayOutput(operationName="", color="#ce2121"):
             """
         )
     )
-
-
-# qBittorrent =================================================================
-
-QB_Port = 10001
-
-tokens = {
-    "ddn": "6qGnEsrCL4GqZ7hMfqpyz_7ejAThUCjVnU9gD5pbP5u",
-    "tdn": "1Q4i7F6isO7zZRrrjBKZzZhwsMu_74yJqoEs1HrJh1zYyxNo1",
-    "mnc": "1QPZGQMEBBI1O3L8G1GtWUiphvF_2d3C6kux93P6p4Zy7SSib",
-    "api001": "1Q3zMbZhIunjp92RvrZpnyuJxZL_3V3JUziX5Dp1sQbTMAPrr",
-    "api002": "1Q45NXgsx6oyusN3GiNAYvkNJPS_AveYUDBcPHsvRvf21WZv",
-    "api003": "1Q6smHt4Bzz9VEXTwj3a7p5Gdx2_5mp6ivT6N6nB3YmRHUEM3",
-}
-
-
-def displayUrl(data, buRemote, reset):
-    clear_output(wait=True)
-    print(f'Web UI: {data["url"]} : {data["port"]}')
-    if "surl" in data.keys():
-        print(f'Web UI (S): {data["surl"]} : {data["port"]}')
-    createButton("Backup Remote", func=buRemote)
-    if "token" in data.keys():
-        createButton("Reset", func=reset)
-
-
-# JDownloader =================================================================
-
-Email = widgets.Text(placeholder="*Required", description="Email:")
-Password = widgets.Text(placeholder="*Required", description="Password:")
-Device = widgets.Text(placeholder="Optional", description="Name:")
-SavePath = widgets.Dropdown(
-    value="/content/Downloads",
-    options=["/content", "/content/Downloads"],
-    description="Save Path:",
-)
-
-
-def refreshJDPath(a=1):
-    if checkAvailable("/content/drive/"):
-        if checkAvailable("/content/drive/Shared drives/"):
-            SavePath.options = (
-                ["/content", "/content/Downloads", "/content/drive/My Drive"]
-                + glob("/content/drive/My Drive/*/")
-                + glob("/content/drive/Shared drives/*/")
-            )
-        else:
-            SavePath.options = [
-                "/content",
-                "/content/Downloads",
-                "/content/drive/My Drive",
-            ] + glob("/content/drive/My Drive/*/")
-    else:
-        SavePath.options = ["/content", "/content/Downloads"]
-
-
-def exitJDWeb():
-    runSh("pkill -9 -e -f java")
-    clear_output(wait=True)
-    createButton("Start", func=startJDService, style="info")
-
-
-def confirmJDForm(a):
-    clear_output(wait=True)
-    action = a.description
-    createButton(f"{action} Confirm?")
-    if action == "Restart":
-        createButton("Confirm", func=startJDService, style="danger")
-    else:
-        createButton("Confirm", func=exitJDWeb, style="danger")
-    createButton("Cancel", func=displayJDControl, style="warning")
-
-
-def displayJDControl(a=1):
-    clear_output(wait=True)
-    createButton("Control Panel")
-    display(
-        HTML(
-            """
-            <h3 style="font-family:Trebuchet MS;color:#4f8bd6;">
-                You can login to the WebUI by clicking
-                    <a href="https://my.jdownloader.org/" target="_blank">
-                        here
-                    </a>.
-            </h3>
-            """
-        ),
-        HTML(
-            """
-            <h4 style="font-family:Trebuchet MS;color:#4f8bd6;">
-                If the server didn't showup in 30 sec. please re-login.
-            </h4>
-            """
-        ),
-    )
-    createButton("Re-Login", func=displayJDLoginForm, style="info")
-    createButton("Restart", func=confirmJDForm, style="warning")
-    createButton("Exit", func=confirmJDForm, style="danger")
-
-
-def startJDService(a=1):
-    runSh("pkill -9 -e -f java")
-    runSh(
-        "java -jar /root/.JDownloader/JDownloader.jar -norestart -noerr -r &",
-        shell=True,  # nosec
-    )
-    displayJDControl()
-
-
-def displayJDLoginForm(a=1):
-    clear_output(wait=True)
-    Email.value = ""
-    Password.value = ""
-    Device.value = ""
-    refreshJDPath()
-    display(
-        HTML(
-            """
-            <h3 style="font-family:Trebuchet MS;color:#4f8bd6;">
-                If you don't have an account yet, please register
-                    <a href="https://my.jdownloader.org/login.html#register" target="_blank">
-                        here
-                    </a>.
-            </h3>
-            """
-        ),
-        HTML("<br>"),
-        Email,
-        Password,
-        Device,
-        SavePath,
-    )
-    createButton("Refresh", func=refreshJDPath)
-    createButton("Login", func=startJDFormLogin, style="info")
-    if checkAvailable(
-        "/root/.JDownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json"
-    ):
-        createButton("Cancel", func=displayJDControl, style="danger")
-
-
-def startJDFormLogin(a=1):
-    try:
-        if not Email.value.strip():
-            ERROR = "Email field is empty."
-            THROW_ERROR
-        if not "@" in Email.value and not "." in Email.value:
-            ERROR = "Email is an incorrect format."
-            THROW_ERROR
-        if not Password.value.strip():
-            ERROR = "Password field is empty."
-            THROW_ERROR
-        if not bool(re.match("^[a-zA-Z0-9]+$", Device.value)) and Device.value.strip():
-            ERROR = "Only alphanumeric are allowed for the device name."
-            THROW_ERROR
-        clear_output(wait=True)
-        if SavePath.value == "/content":
-            savePath = {"defaultdownloadfolder": "/content/Downloads"}
-        elif SavePath.value == "/content/Downloads":
-            runSh("mkdir -p -m 666 /content/Downloads")
-            savePath = {"defaultdownloadfolder": "/content/Downloads"}
-        else:
-            savePath = {"defaultdownloadfolder": SavePath.value}
-
-        with open(
-            "/root/.JDownloader/cfg/org.jdownloader.settings.GeneralSettings.json", "w+"
-        ) as outPath:
-            json.dump(savePath, outPath)
-        if Device.value.strip() == "":
-            Device.value = Email.value
-        runSh("pkill -9 -e -f java")
-        data = {
-            "email": Email.value,
-            "password": Password.value,
-            "devicename": Device.value,
-            "directconnectmode": "LAN",
-        }
-        with open(
-            "/root/.JDownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json",
-            "w+",
-        ) as outData:
-            json.dump(data, outData)
-        startJDService()
-    except:
-        print(ERROR)
-
-
-def handleJDLogin(newAccount):
-    installJDownloader()
-    if newAccount:
-        displayJDLoginForm()
-    else:
-        data = {
-            "email": "daniel.dungngo@gmail.com",
-            "password": "ZjPNiqjL4e6ckwM",
-            "devicename": "daniel.dungngo@gmail.com",
-            "directconnectmode": "LAN",
-        }
-        with open(
-            "/root/.JDownloader/cfg/org.jdownloader.api.myjdownloader.MyJDownloaderSettings.json",
-            "w+",
-        ) as outData:
-            json.dump(data, outData)
-        startJDService()
-
-
-# TO DO ===
-# Update MAKE BUTTON FUNCTIONS
-# FINISH MAKING ICONS
-#
