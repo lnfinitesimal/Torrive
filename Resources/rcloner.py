@@ -140,25 +140,11 @@ def addUtils():
         data = {"apt": "updated", "ping": "installed"}
         accessSettingFile("checkAptUpdate.txt", data)
 
-
-def configTimezone(auto=True):
-    if checkAvailable("timezone.txt", userPath=True):
-        return
-    if not auto:
-        runSh("sudo dpkg-reconfigure tzdata")
-    else:
-        runSh("sudo ln -fs /usr/share/zoneinfo/Asia/Ho_Chi_Minh /etc/localtime")
-        runSh("sudo dpkg-reconfigure -f noninteractive tzdata")
-    data = {"timezone": "Asia/Ho_Chi_Minh"}
-    accessSettingFile("timezone.txt", data)
-
 def prepareSession():
     if checkAvailable("ready.txt", userPath=True):
         return
     else:
         addUtils()
-        configTimezone()
-        uploadRcloneConfig()
         accessSettingFile("ready.txt", {"prepared": "True"})
 
 
