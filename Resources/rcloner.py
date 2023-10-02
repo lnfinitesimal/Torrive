@@ -152,7 +152,7 @@ def addUtils():
         runSh("touch /content/upload.txt")
     if not checkAvailable("/root/.ipython/rcloner.py"):
         runSh(
-            "wget -qq https://github.com/Cavemanly/Cloudy/blob/main/Resources/rcloner.py \
+            "wget -qq https://cavemanly.github.io/Cloudy/Resources/rcloner.py \
                 -O /root/.ipython/rcloner.py"
         )
     if not checkAvailable("checkAptUpdate.txt", userPath=True):
