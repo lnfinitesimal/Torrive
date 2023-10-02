@@ -150,9 +150,6 @@ def prepareSession():
 
 # rClone ======================================================================
 
-PATH_RClone_Config = "/usr/local/sessionSettings"
-
-
 def displayOutput(operationName="", color="#ce2121"):
     if color == "success":
         hColor = "#28a745"
